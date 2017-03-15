@@ -155,6 +155,7 @@ void main(int argc, char *argv[]) {  // @params: client IP, client port, server 
 	printf("Phase 3 ended.\n");
 
 	/*
+	 * newly added codes go here
 	 * phase 4: restore connection of the true client
 	 */
 	printf("\nTakeover phase 4: Restoring connection.\n");

